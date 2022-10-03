@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link rel="stylesheet" href="./css/styles.css" />
+    <script defer src="./js/main.js"></script>
+  </head>
+  <body>
+    <div class="overlayMain"></div>
+    <div class="overlayAside"></div>
+    <main>
+      <div class="dealerHand">
+        <div class="score">12</div>
+        <div class="card">10H</div>
+        <div class="card">2C</div>
+      </div>
+      <div class="centerTable">
+        <button class="button hit">Hit</button>
+        <button class="button doubleDown">X2</button>
+        <button class="button stand">Stand</button>
+      </div>
+      <div class="playerHand">
+        <div class="score">21</div>
+        <div class="card">JS</div>
+        <div class="card">AD</div>
+      </div>
+      <aside>
+        <div class="bank">
+          <div class="bankTitle">Bank</div>
+          <div class="bankValue"></div>
+        </div>
+        <div>
+          <div class="betTitle">Current Bet</div>
+          <input type="text" class="currentBet" />
+          <div>
+            <button class="button increaseBet">V</button>
+          </div>
+          <div>
+            <button class="button defaultBet">Default</button>
+          </div>
+          <div>
+            <button class="button decreaseBet">V</button>
+          </div>
+          <div>
+            <button class="button placeBet">Place Bet</button>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </body>
+</html>

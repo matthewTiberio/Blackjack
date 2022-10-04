@@ -6,16 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
     <link rel="stylesheet" href="./css/styles.css" />
+    <link rel="stylesheet" href="./css/card-deck-css/css/cardstarter.css" />
     <script defer src="./js/main.js"></script>
   </head>
   <body>
     <div class="overlayMain"></div>
     <div class="overlayAside"></div>
+    <div class="overlayCenter">
+      <div class="overlayMessage"></div>
+      <button class="button next playAgain">Play Again</button>
+      <button class="button next cashOut">Cash Out</button>
+    </div>
     <main>
       <div class="dealerHand">
-        <div class="score">12</div>
-        <div class="card">10H</div>
-        <div class="card">2C</div>
+        <div class="score" id="dealerScore"></div>
       </div>
       <div class="centerTable">
         <button class="button hit">Hit</button>
@@ -23,9 +27,7 @@
         <button class="button stand">Stand</button>
       </div>
       <div class="playerHand">
-        <div class="score">21</div>
-        <div class="card">JS</div>
-        <div class="card">AD</div>
+        <div class="score" id="playerScore"></div>
       </div>
       <aside>
         <div class="bank">

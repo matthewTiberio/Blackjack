@@ -12,6 +12,12 @@
   <body>
     <div class="overlayMain"></div>
     <div class="overlayAside"></div>
+    <div class="overlaySplit">
+      <button class="button hit next" id="splitHit1">Hit</button>
+      <button class="button stand next" id="splitStand1">Stand</button>
+      <button class="button hit next" id="splitHit2">Hit</button>
+      <button class="button stand next" id="splitStand2">Stand</button>
+    </div>
     <div class="overlayCenter">
       <div class="overlayMessage"></div>
       <button class="button next playAgain">Play Again</button>
@@ -22,9 +28,9 @@
         <div class="score" id="dealerScore"></div>
       </div>
       <div class="centerTable">
-        <button class="button hit">Hit</button>
+        <button class="button hit" id="hit">Hit</button>
         <button class="button doubleDown">X2</button>
-        <button class="button stand">Stand</button>
+        <button class="button stand" id="stand">Stand</button>
       </div>
       <div class="playerHand">
         <div class="score" id="playerScore"></div>

@@ -3,13 +3,13 @@
 }
 body {
   margin: auto;
-  background-color: grey;
+  background-color: green;
 }
 main {
   display: grid;
   height: 100vh;
   background-color: green;
-  grid-template-columns: 250px 1fr;
+  grid-template-columns: 250px calc(100vw - 250px);
   grid-template-rows: 1fr 1fr 1fr;
 }
 aside {
@@ -92,7 +92,8 @@ aside .defaultBet {
   align-items: center;
 }
 .hit,
-.stand {
+.stand,
+.split {
   width: 150px;
   height: 75px;
   font-size: 32px;
@@ -137,7 +138,8 @@ body > div {
   height: 100vh;
   width: 250px;
 }
-.overlayCenter {
+.overlayCenter,
+.overlaySplit {
   height: calc(100vh / 3);
   width: calc(100vw - 250px);
   left: 250px;
@@ -159,4 +161,10 @@ body > div {
   width: 200px;
   margin: 15px;
   font-size: 32px;
+  z-index: -1;
+}
+.overlaySplit {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }

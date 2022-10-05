@@ -3,12 +3,35 @@ let bankStart = 1000;
 let betDefault = 100;
 let minBet = 10;
 let playingDeck = [];
-let pHand = [];
-let dHand = [];
-let playerCheck = [];
-let dealerCheck = [];
-let pScore = 0;
-let dScore = 0;
+let standCount = 0;
+let message = "";
+
+const player = {
+  hand: [],
+  bust: false,
+  score: 0,
+  hasAce: false,
+  aceType: "soft",
+  hasBlackJack: false,
+};
+
+const split = {
+  hand: [],
+  bust: false,
+  score: 0,
+  hasAce: false,
+  aceType: "soft",
+  hasBlackJack: false,
+};
+
+const dealer = {
+  hand: [],
+  bust: false,
+  score: 0,
+  hasAce: false,
+  aceType: "soft",
+  hasBlackJack: false,
+};
 
 // prettier-ignore
 const basicDeck = [
@@ -27,16 +50,23 @@ const betText = document.querySelector(".currentBet");
 const betUp = document.querySelector(".increaseBet");
 const betDown = document.querySelector(".decreaseBet");
 const betReset = document.querySelector(".defaultBet");
+const dealBtn = document.querySelector(".placeBet");
 
 // Playing buttons
-const hitBtn = document.querySelector(".hit");
-const standBtn = document.querySelector(".stand");
+const hitBtn = document.getElementById("hit");
+const standBtn = document.getElementById("stand");
 const doubleDown = document.querySelector(".doubleDown");
 const playAgainBtn = document.querySelector(".playAgain");
 const cashOutBtn = document.querySelector(".cashOut");
 
+// Split elements
+const overlaySplit = document.querySelector(".overlaySplit");
+const splitHit1Btn = document.getElementById("splitHit1");
+const splitStand1Btn = document.getElementById("splitStand1");
+const splitHit2Btn = document.getElementById("splitHit2");
+const splitStand2Btn = document.getElementById("splitStand2");
+
 // Reset elements
-const dealBtn = document.querySelector(".placeBet");
 const overlayMain = document.querySelector(".overlayMain");
 const overlayAside = document.querySelector(".overlayAside");
 const overlayCenter = document.querySelector(".overlayCenter");
@@ -47,23 +77,23 @@ const pScoreEl = document.getElementById("playerScore");
 const dScoreEl = document.getElementById("dealerScore");
 const pHandEl = document.querySelector(".playerHand");
 const dHandEl = document.querySelector(".dealerHand");
+const centerTable = document.querySelector(".centerTable");
 
-// Event Listeners
+// Betting Event Listeners
 betUp.addEventListener("click", increaseBet);
 betDown.addEventListener("click", decreaseBet);
 betReset.addEventListener("click", resetBet);
-hitBtn.addEventListener("click", hitMe);
-standBtn.addEventListener("click", standMe);
-doubleDown.addEventListener("click", doubleBet);
 dealBtn.addEventListener("click", dealHand);
 betText.addEventListener("blur", checkBetVal);
+
+// Win Condition Event Listeners
 playAgainBtn.addEventListener("click", resetHand);
 cashOutBtn.addEventListener("click", cashOut);
 
 // CODE START
 init();
 
-// FUNCTIONS
+// INITIAL FUNCTIONS
 function init() {
   bankText.textContent = `$ ${bankStart}`;
   betText.value = `$ ${betDefault}`;
@@ -71,43 +101,59 @@ function init() {
   resetHand();
 }
 
-function dealHand() {
-  overlayMain.style.zIndex = -1;
-  overlayAside.style.zIndex = 1;
-  removeCards(pHandEl);
-  removeCards(dHandEl);
-  dealCardUp(pHandEl);
-  dealCardUp(pHandEl);
-  dealCardUp(dHandEl);
-  dealCardDown(dHandEl);
-  sumScore();
+function resetHand() {
+  overlayMain.style.zIndex = 1;
+  overlayAside.style.zIndex = -1;
+  overlayCenter.style.zIndex = -1;
+  overlaySplit.style.zIndex = -1;
+  message = "";
+  resetPerson(player);
+  resetPerson(split);
+  resetPerson(dealer);
+  addCard(player, "faceDown");
+  addCard(player, "faceDown");
+  addCard(dealer, "faceDown");
+  addCard(dealer, "faceDown");
+  unLockPlayer();
+  renderTable();
 }
 
-function dealCardUp(hand) {
-  let newCard = document.createElement("div");
-  newCard.classList.add("card", rndCard(hand));
-  hand.appendChild(newCard);
+function resetPerson(person) {
+  person.hand = [];
+  person.hasAce = false;
+  person.aceType = "soft";
+  person.bust = false;
 }
 
-function dealCardDown(hand) {
-  let newCard = document.createElement("div");
-  newCard.classList.add("card", "back");
-  hand.appendChild(newCard);
+function addCard(person, face) {
+  if (face === "faceUp") {
+    person.hand.push(rndCard(person));
+  } else {
+    person.hand.push("back");
+  }
 }
 
-function dealHoleCard() {
-  dHandEl.removeChild(dHandEl.lastChild);
-  let newCard = document.createElement("div");
-  newCard.classList.add("card", rndCard(dHandEl));
-  dHandEl.appendChild(newCard);
-}
-
-function rndCard(hand) {
+function rndCard(person) {
   let rndIdx = Math.floor(Math.random() * playingDeck.length);
-  hand === pHandEl
-    ? pHand.push(playingDeck[rndIdx].substring(1))
-    : dHand.push(playingDeck[rndIdx].substring(1));
   return playingDeck[rndIdx];
+}
+
+function unLockPlayer() {
+  doubleDown.style.opacity = 1;
+  doubleDown.addEventListener("click", doubleBet);
+  hitBtn.style.opacity = 1;
+  hitBtn.addEventListener("click", hitMe);
+  standBtn.style.opacity = 1;
+  standBtn.addEventListener("click", standOrBust);
+}
+
+function renderTable() {
+  removeCards(dHandEl);
+  removeCards(pHandEl);
+  updateScore(player);
+  updateScore(dealer);
+  renderHand(player, pHandEl, pScoreEl);
+  renderHand(dealer, dHandEl, dScoreEl);
 }
 
 function removeCards(hand) {
@@ -116,6 +162,44 @@ function removeCards(hand) {
   }
 }
 
+function updateScore(person) {
+  person.score = person.hand.reduce(function (acc, card, ind) {
+    if (card !== "back") {
+      if (parseInt(card.substring(1))) {
+        return (acc += parseInt(card.substring(1)));
+      } else if (card.substring(1) === "A") {
+        person.hasAce = true;
+        if (person.aceType === "soft") {
+          return (acc += 11);
+        } else {
+          return (acc += 1);
+        }
+      } else {
+        return (acc += 10);
+      }
+    } else {
+      return acc;
+    }
+  }, 0);
+  person.hasBlackJack = person.score === 21;
+}
+
+function renderHand(person, hand, score, size) {
+  person.hand.forEach(function (card, idx) {
+    let newCard = document.createElement("div");
+    newCard.classList.add("card", size, card);
+    hand.appendChild(newCard);
+  });
+  if (person.hasBlackJack) {
+    score.textContent = person.score;
+  } else if (person.hasAce && person.aceType === "soft") {
+    score.textContent = `${person.score}/${person.score - 10}`;
+  } else {
+    score.textContent = person.score;
+  }
+}
+
+// BETTING FUNCTIONS
 function increaseBet() {
   parseInts();
   if (betValue < bankValue) {
@@ -144,8 +228,8 @@ function doubleBet() {
     betValue *= 2;
   }
   betText.value = `$ ${betValue}`;
-  doubleDown.style.opacity = 0.5;
-  doubleDown.removeEventListener("click", doubleBet);
+  hitMe();
+  player.bust ? "" : standOrBust();
 }
 
 function parseInts() {
@@ -167,32 +251,97 @@ function checkBetVal() {
   betText.value = `$ ${betValue}`;
 }
 
-function dealerPlay() {
-  dealHoleCard();
-  sumScore();
-  while (dScore < 17) {
-    dealCardUp(dHandEl);
-    sumScore();
-  }
-  dealerCheck = checkBust(dScore);
-  let evt = checkWin();
-  payOut(evt);
+// PLAYING FUNCTIONS
+function dealHand() {
+  overlayMain.style.zIndex = -1;
+  overlayAside.style.zIndex = 1;
+  player.hand = ["s08", "h08"];
+  dealer.hand = [];
+  // addCard(player, "faceUp");
+  // addCard(player, "faceUp");
+  addCard(dealer, "faceUp");
+  addCard(dealer, "faceDown");
+  renderTable();
+  checkSplit();
 }
 
-function checkWin() {
-  if (dealerCheck === "Bust") {
-    if (playerCheck === "Bust") {
+function hitMe() {
+  addCard(player, "faceUp");
+  renderTable();
+  player.bust = checkBust(player);
+  player.bust ? standOrBust() : "";
+  doubleDown.style.opacity = 0.5;
+  doubleDown.removeEventListener("click", doubleBet);
+}
+
+function standOrBust() {
+  lockPlayer();
+  dealerPlay();
+}
+
+function checkBust(person) {
+  if (person.hasAce) {
+    if (person.aceType === "soft") {
+      if (person.score > 21) {
+        person.aceType = "hard";
+        renderTable();
+      } else {
+        return false;
+      }
+    } else {
+      return person.score > 21;
+    }
+  } else {
+    return person.score > 21;
+  }
+}
+
+function lockPlayer() {
+  doubleDown.style.opacity = 0.5;
+  doubleDown.removeEventListener("click", doubleBet);
+  hitBtn.style.opacity = 0.5;
+  hitBtn.removeEventListener("click", hitMe);
+  standBtn.style.opacity = 0.5;
+  standBtn.removeEventListener("click", standOrBust);
+}
+
+// DEALER FUNCTIONS
+function dealerPlay() {
+  dealHoleCard();
+  setTimeout(function () {
+    while (dealer.score < 17) {
+      addCard(dealer, "faceUp");
+      renderTable();
+    }
+    dealer.bust = checkBust(dealer);
+    let evt = checkWin(player);
+    payOut(evt);
+    overlayMessage.textContent = message;
+    overlayCenter.style.zIndex = 2;
+  }, 1000);
+}
+
+function dealHoleCard() {
+  dealer.hand.pop();
+  addCard(dealer, "faceUp");
+  renderTable();
+}
+
+// WIN CONDITION FUNCTIONS
+function checkWin(person) {
+  if (dealer.bust) {
+    if (person.bust) {
       return "Draw";
     } else {
       return "Win";
     }
   } else {
-    if (playerCheck === "Bust") {
+    if (person.bust) {
       return "Lose";
     } else {
-      if (pScore > dScore) {
+      if (person.score > dealer.score) {
         return "Win";
-      } else if (pScore < dScore) {
+      } else if (person.score < dealer.score) {
         return "Lose";
       } else {
         return "Draw";
@@ -205,104 +354,157 @@ function payOut(evt) {
   parseInts();
   if (evt === "Win") {
     bankValue += betValue;
-    overlayMessage.textContent = "You Win :)";
+    message = message + "You Win :) ";
   } else if (evt === "Lose") {
     bankValue -= betValue;
-    overlayMessage.textContent = "You lose :(";
+    message = message + "You lose :( ";
   } else {
-    overlayMessage.textContent = "Push";
+    message = message + "Push ";
   }
   bankText.textContent = `$ ${bankValue}`;
-  overlayCenter.style.zIndex = 2;
-}
-
-function resetHand() {
-  overlayMain.style.zIndex = 1;
-  overlayAside.style.zIndex = -1;
-  overlayCenter.style.zIndex = -1;
-  pHand = [];
-  dHand = [];
-  removeCards(dHandEl);
-  removeCards(pHandEl);
-  dealCardDown(pHandEl);
-  dealCardDown(pHandEl);
-  dealCardDown(dHandEl);
-  dealCardDown(dHandEl);
-  unLockPlayer();
-}
-
-function hitMe() {
-  dealCardUp(pHandEl);
-  sumScore();
-  playerCheck = checkBust(pScore);
-  playerCheck === "Bust" ? playerBust() : "";
-}
-
-function standMe() {
-  lockPlayer();
-  dealerPlay();
-}
-
-function lockPlayer() {
-  doubleDown.style.opacity = 0.5;
-  doubleDown.removeEventListener("click", doubleBet);
-  hitBtn.style.opacity = 0.5;
-  hitBtn.removeEventListener("click", hitMe);
-  standBtn.style.opacity = 0.5;
-  standBtn.removeEventListener("click", standMe);
-}
-
-function unLockPlayer() {
-  doubleDown.style.opacity = 1;
-  doubleDown.addEventListener("click", doubleBet);
-  hitBtn.style.opacity = 1;
-  hitBtn.addEventListener("click", hitMe);
-  standBtn.style.opacity = 1;
-  standBtn.addEventListener("click", standMe);
-}
-
-function sumScore() {
-  pScore = pHand.reduce(function (acc, card, ind) {
-    if (parseInt(card)) {
-      return (acc += parseInt(card));
-    } else if (card === "A") {
-      return (acc += 11);
-    } else {
-      return (acc += 10);
-    }
-  }, 0);
-  dScore = dHand.reduce(function (acc, card, ind) {
-    if (parseInt(card)) {
-      return (acc += parseInt(card));
-    } else if (card === "A") {
-      return (acc += 11);
-    } else {
-      return (acc += 10);
-    }
-  }, 0);
-  pScoreEl.textContent = pScore;
-  dScoreEl.textContent = dScore;
-}
-
-function checkBust(score) {
-  if (score > 21) {
-    return "Bust";
-  } else {
-    return "Safe";
-  }
-}
-
-function playerBust() {
-  lockPlayer();
-  dealerPlay();
 }
 
 function cashOut() {
   parseInts();
   let netGain = bankValue - bankStart;
-  overlayMessage.textContent =
-    netGain > 0 ? `You won $ ${netGain}!` : `You lost $ ${netGain}`;
+  overlayMessage.innerHTML =
+    netGain > 0
+      ? `You won $${netGain}! </br> Thanks for playing`
+      : `You lost $${netGain} </br> Thanks for playing`;
+  overlayMessage.style.lineheight = "17vh";
   while (overlayCenter.children.length > 1) {
     overlayCenter.removeChild(overlayCenter.lastChild);
   }
+}
+
+// SPLIT FUNCTIONS
+function checkSplit() {
+  if (player.hand[0].substring(1) === player.hand[1].substring(1)) {
+    let splitBtn = document.createElement("button");
+    splitBtn.classList.add("button", "split");
+    splitBtn.style.marginLeft = "75px";
+    splitBtn.textContent = "Split";
+    splitBtn.addEventListener("click", splitCards);
+    centerTable.appendChild(splitBtn);
+  }
+}
+
+function splitCards() {
+  split.hand[0] = player.hand[1];
+  player.hand.pop();
+  player.hand.push(rndCard(player));
+  split.hand.push(rndCard(player));
+  updateScore(player);
+  updateScore(split);
+  centerTable.removeChild(centerTable.lastChild);
+  unlockSplit();
+  renderSplit();
+}
+
+function renderSplit() {
+  removeCards(pHandEl);
+  removeCards(dHandEl);
+  renderHand(dealer, dHandEl, dScoreEl);
+  renderHand(player, pHandEl, pScoreEl, "large");
+
+  let spacer = document.createElement("div");
+  spacer.style.width = "50px";
+  pHandEl.appendChild(spacer);
+
+  let sScoreEl = document.createElement("div");
+  sScoreEl.classList.add("score");
+  sScoreEl.style.marginRight = "";
+  sScoreEl.style.marginLeft = "25px";
+
+  renderHand(split, pHandEl, sScoreEl, "large");
+  pHandEl.appendChild(sScoreEl);
+  overlaySplit.style.zIndex = 1;
+}
+
+// SPLIT PLAYING FUNCTIONS
+function unlockSplit() {
+  splitHit1Btn.style.opacity = 1;
+  splitHit1Btn.addEventListener("click", function () {
+    hitSplit(player);
+  });
+  splitStand1Btn.opacity = 1;
+  splitStand1Btn.addEventListener("click", function () {
+    standOrBustSplit(player);
+  });
+  splitHit2Btn.style.opacity = 1;
+  splitHit2Btn.addEventListener("click", function () {
+    hitSplit(split);
+  });
+  splitStand2Btn.style.opacity = 1;
+  splitStand2Btn.addEventListener("click", function () {
+    standOrBustSplit(split);
+  });
+  standCount = 0;
+}
+
+function hitSplit(person) {
+  addCard(person, "faceUp");
+  updateScore(person);
+  renderSplit();
+  person.bust = checkBust(person);
+  person.bust ? standOrBustSplit(person) : "";
+}
+
+function standOrBustSplit(person) {
+  lockSplit(person);
+  standCount = standCount + 1;
+  standCheck();
+}
+
+function standCheck() {
+  standCount === 2 ? dealerPlaySplit() : "";
+}
+
+function lockSplit(person) {
+  if (person === player) {
+    splitHit1Btn.style.opacity = 0.5;
+    splitHit1Btn.removeEventListener("click", function () {
+      hitSplit(player);
+    });
+    splitStand1Btn.style.opacity = 0.5;
+    splitStand1Btn.removeEventListener("click", function () {
+      standOrBustSplit(player);
+    });
+  } else {
+    splitHit2Btn.style.opacity = 0.5;
+    splitHit2Btn.removeEventListener("click", function () {
+      hitSplit(split);
+    });
+    splitStand2Btn.style.opacity = 0.5;
+    splitStand2Btn.removeEventListener("click", function () {
+      standOrBustSplit(split);
+    });
+  }
+}
+
+// SPLIT DEALER FUNCTIONS
+function dealerPlaySplit() {
+  dealHoleCardSplit();
+  setTimeout(function () {
+    while (dealer.score < 17) {
+      addCard(dealer, "faceUp");
+      updateScore(dealer);
+      renderSplit();
+    }
+    dealer.bust = checkBust(dealer);
+    let evt1 = checkWin(player);
+    let evt2 = checkWin(split);
+    payOut(evt1);
+    payOut(evt2);
+    overlaySplit.style.zIndex = -1;
+    overlayMessage.textContent = message;
+    overlayCenter.style.zIndex = 2;
+  }, 1000);
+}
+
+function dealHoleCardSplit() {
+  dealer.hand.pop();
+  addCard(dealer, "faceUp");
+  updateScore(dealer);
+  renderSplit();
 }

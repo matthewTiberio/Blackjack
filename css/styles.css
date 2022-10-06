@@ -1,5 +1,6 @@
 * {
   box-sizing: border-box;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 body {
   margin: auto;
@@ -129,7 +130,8 @@ body > div {
   background-color: black;
   opacity: 25%;
 }
-.overlayMain {
+.overlayMain,
+.overlayBankrupt {
   height: 100vh;
   width: calc(100vw - 250px);
   left: 250px;
@@ -139,21 +141,23 @@ body > div {
   width: 250px;
 }
 .overlayCenter,
-.overlaySplit {
-  height: calc(100vh / 3);
+.overlaySplit,
+.overlayShuffle {
+  height: 33vh;
   width: calc(100vw - 250px);
   left: 250px;
-  top: calc(100vh / 3);
+  top: 33vh;
   background-color: green;
   opacity: 1;
   text-align: center;
+  z-index: -1;
 }
-.overlayMessage {
+div.overlayMessage {
   font-size: 86px;
   font-weight: bolder;
   color: black;
   opacity: 1;
-  line-height: calc(100vh / 6);
+  line-height: 17vh;
 }
 .button.next {
   display: inline;
@@ -167,4 +171,27 @@ body > div {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+.overlayShuffle {
+  font-size: 86px;
+  font-weight: bolder;
+  line-height: 33vh;
+  color: black;
+}
+.overlayBankrupt {
+  text-align: center;
+  background-color: green;
+  opacity: 1;
+  margin: auto;
+  z-index: -1;
+}
+h1 {
+  font-size: 86px;
+  font-weight: bolder;
+  color: red;
+  margin-top: 33vh;
+}
+h2 {
+  color: black;
+  font-size: 64px;
 }

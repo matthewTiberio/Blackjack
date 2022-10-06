@@ -1,17 +1,21 @@
 // Constants
 let bankStart = 1000;
-let betDefault = 100;
-let minBet = 10;
+let betDefault = 200;
+let minBet = 50;
 let playingDeck = [];
 let standCount = 0;
 let message = "";
+let removeSplitBtn = false;
+let size = "";
+let splitBtn;
+let deckCount = 4;
 
 const player = {
   hand: [],
   bust: false,
   score: 0,
-  hasAce: false,
-  aceType: "soft",
+  hasAce: [],
+  aceType: [],
   hasBlackJack: false,
 };
 
@@ -19,8 +23,8 @@ const split = {
   hand: [],
   bust: false,
   score: 0,
-  hasAce: false,
-  aceType: "soft",
+  hasAce: [],
+  aceType: [],
   hasBlackJack: false,
 };
 
@@ -28,8 +32,8 @@ const dealer = {
   hand: [],
   bust: false,
   score: 0,
-  hasAce: false,
-  aceType: "soft",
+  hasAce: [],
+  aceType: [],
   hasBlackJack: false,
 };
 
@@ -55,7 +59,7 @@ const dealBtn = document.querySelector(".placeBet");
 // Playing buttons
 const hitBtn = document.getElementById("hit");
 const standBtn = document.getElementById("stand");
-const doubleDown = document.querySelector(".doubleDown");
+const doubleDownBtn = document.querySelector(".doubleDown");
 const playAgainBtn = document.querySelector(".playAgain");
 const cashOutBtn = document.querySelector(".cashOut");
 
@@ -71,6 +75,8 @@ const overlayMain = document.querySelector(".overlayMain");
 const overlayAside = document.querySelector(".overlayAside");
 const overlayCenter = document.querySelector(".overlayCenter");
 const overlayMessage = document.querySelector(".overlayMessage");
+const overlayShuffle = document.querySelector(".overlayShuffle");
+const overlayBankrupt = document.querySelector(".overlayBankrupt");
 
 // Hand elements
 const pScoreEl = document.getElementById("playerScore");
@@ -87,7 +93,7 @@ dealBtn.addEventListener("click", dealHand);
 betText.addEventListener("blur", checkBetVal);
 
 // Win Condition Event Listeners
-playAgainBtn.addEventListener("click", resetHand);
+playAgainBtn.addEventListener("click", checkConditions);
 cashOutBtn.addEventListener("click", cashOut);
 
 // CODE START
@@ -97,8 +103,16 @@ init();
 function init() {
   bankText.textContent = `$ ${bankStart}`;
   betText.value = `$ ${betDefault}`;
-  playingDeck = basicDeck;
+  createDeck();
   resetHand();
+}
+
+function createDeck() {
+  for (let i = 0; i < deckCount; i++) {
+    basicDeck.forEach(function (card, idx) {
+      playingDeck.push(card);
+    });
+  }
 }
 
 function resetHand() {
@@ -107,6 +121,7 @@ function resetHand() {
   overlayCenter.style.zIndex = -1;
   overlaySplit.style.zIndex = -1;
   message = "";
+  standCount = 0;
   resetPerson(player);
   resetPerson(split);
   resetPerson(dealer);
@@ -118,29 +133,49 @@ function resetHand() {
   renderTable();
 }
 
+function shuffleDeck() {
+  overlayShuffle.style.zIndex = 2;
+  overlayShuffle.textContent = "Reshuffle";
+  setTimeout(function () {
+    overlayShuffle.style.zIndex = -1;
+    playingDeck = [];
+    createDeck();
+    resetHand();
+  }, 1500);
+}
+
 function resetPerson(person) {
   person.hand = [];
-  person.hasAce = false;
-  person.aceType = "soft";
+  person.hasAce = [];
+  person.aceType = [];
   person.bust = false;
+  person.hasBlackJack = false;
 }
 
 function addCard(person, face) {
   if (face === "faceUp") {
-    person.hand.push(rndCard(person));
+    rndIdx = rndCard();
+    person.hand.push(playingDeck[rndIdx]);
+    playingDeck.splice(rndIdx, 1);
+    if (person.hand[person.hand.length - 1].substring(1) === "A") {
+      person.hasAce.push(true);
+      person.aceType.push("soft");
+    } else {
+      person.hasAce.push(false);
+      person.aceType.push("");
+    }
   } else {
     person.hand.push("back");
   }
 }
 
-function rndCard(person) {
-  let rndIdx = Math.floor(Math.random() * playingDeck.length);
-  return playingDeck[rndIdx];
+function rndCard() {
+  return (rndIdx = Math.floor(Math.random() * playingDeck.length));
 }
 
 function unLockPlayer() {
-  doubleDown.style.opacity = 1;
-  doubleDown.addEventListener("click", doubleBet);
+  doubleDownBtn.style.opacity = 1;
+  doubleDownBtn.addEventListener("click", doubleDown);
   hitBtn.style.opacity = 1;
   hitBtn.addEventListener("click", hitMe);
   standBtn.style.opacity = 1;
@@ -152,8 +187,23 @@ function renderTable() {
   removeCards(pHandEl);
   updateScore(player);
   updateScore(dealer);
-  renderHand(player, pHandEl, pScoreEl);
-  renderHand(dealer, dHandEl, dScoreEl);
+  removeSplit(removeSplitBtn);
+  if (split.hand[0]) {
+    updateScore(split);
+    renderSplit();
+  } else if (player.hand.length > 4) {
+    renderHand(player, pHandEl, pScoreEl, "small");
+  } else {
+    renderHand(player, pHandEl, pScoreEl);
+  }
+  if (dealer.hand.length > 4) {
+    renderHand(dealer, dHandEl, dScoreEl, "small");
+  } else {
+    renderHand(dealer, dHandEl, dScoreEl);
+  }
+  if (player.hand[0] !== "back" && dealer.hand[1] === "back") {
+    checkSplit();
+  }
 }
 
 function removeCards(hand) {
@@ -163,13 +213,12 @@ function removeCards(hand) {
 }
 
 function updateScore(person) {
-  person.score = person.hand.reduce(function (acc, card, ind) {
+  person.score = person.hand.reduce(function (acc, card, idx) {
     if (card !== "back") {
       if (parseInt(card.substring(1))) {
         return (acc += parseInt(card.substring(1)));
-      } else if (card.substring(1) === "A") {
-        person.hasAce = true;
-        if (person.aceType === "soft") {
+      } else if (person.hasAce[idx]) {
+        if (person.aceType[idx] === "soft") {
           return (acc += 11);
         } else {
           return (acc += 1);
@@ -181,7 +230,10 @@ function updateScore(person) {
       return acc;
     }
   }, 0);
-  person.hasBlackJack = person.score === 21;
+  if (person.score === 21 && person.hand.length === 2) {
+    person.hasBlackJack = true;
+  }
+  person.bust = checkBust(person);
 }
 
 function renderHand(person, hand, score, size) {
@@ -192,7 +244,7 @@ function renderHand(person, hand, score, size) {
   });
   if (person.hasBlackJack) {
     score.textContent = person.score;
-  } else if (person.hasAce && person.aceType === "soft") {
+  } else if (person.aceType.includes("soft")) {
     score.textContent = `${person.score}/${person.score - 10}`;
   } else {
     score.textContent = person.score;
@@ -220,18 +272,6 @@ function resetBet() {
   betText.value = betDefault;
 }
 
-function doubleBet() {
-  parseInts();
-  if (betValue * 2 > bankValue) {
-    betValue = bankValue;
-  } else {
-    betValue *= 2;
-  }
-  betText.value = `$ ${betValue}`;
-  hitMe();
-  player.bust ? "" : standOrBust();
-}
-
 function parseInts() {
   bankValue = parseInt(bankText.textContent.replace("$", ""));
   betValue = parseInt(betText.value.replace("$", ""));
@@ -255,23 +295,21 @@ function checkBetVal() {
 function dealHand() {
   overlayMain.style.zIndex = -1;
   overlayAside.style.zIndex = 1;
-  player.hand = ["s08", "h08"];
+  player.hand = [];
   dealer.hand = [];
-  // addCard(player, "faceUp");
-  // addCard(player, "faceUp");
+  addCard(player, "faceUp");
+  addCard(player, "faceUp");
   addCard(dealer, "faceUp");
   addCard(dealer, "faceDown");
   renderTable();
-  checkSplit();
 }
 
 function hitMe() {
   addCard(player, "faceUp");
   renderTable();
-  player.bust = checkBust(player);
   player.bust ? standOrBust() : "";
-  doubleDown.style.opacity = 0.5;
-  doubleDown.removeEventListener("click", doubleBet);
+  doubleDownBtn.style.opacity = 0.5;
+  doubleDownBtn.removeEventListener("click", doubleDown);
 }
 
 function standOrBust() {
@@ -279,26 +317,37 @@ function standOrBust() {
   dealerPlay();
 }
 
+function doubleDown() {
+  parseInts();
+  if (betValue * 2 > bankValue) {
+    betValue = bankValue;
+  } else {
+    betValue *= 2;
+  }
+  betText.value = `$ ${betValue}`;
+  hitMe();
+  player.bust ? "" : standOrBust();
+}
+
 function checkBust(person) {
-  if (person.hasAce) {
-    if (person.aceType === "soft") {
-      if (person.score > 21) {
-        person.aceType = "hard";
-        renderTable();
-      } else {
-        return false;
-      }
+  if (person.score > 21) {
+    if (person.aceType.includes("soft")) {
+      let aceIdx = person.aceType.findIndex(function (card) {
+        return card === "soft";
+      });
+      person.aceType[aceIdx] = "hard";
+      updateScore(person);
     } else {
-      return person.score > 21;
+      return true;
     }
   } else {
-    return person.score > 21;
+    return false;
   }
 }
 
 function lockPlayer() {
-  doubleDown.style.opacity = 0.5;
-  doubleDown.removeEventListener("click", doubleBet);
+  doubleDownBtn.style.opacity = 0.5;
+  doubleDownBtn.removeEventListener("click", doubleDown);
   hitBtn.style.opacity = 0.5;
   hitBtn.removeEventListener("click", hitMe);
   standBtn.style.opacity = 0.5;
@@ -308,17 +357,11 @@ function lockPlayer() {
 // DEALER FUNCTIONS
 function dealerPlay() {
   dealHoleCard();
-  setTimeout(function () {
-    while (dealer.score < 17) {
-      addCard(dealer, "faceUp");
-      renderTable();
-    }
-    dealer.bust = checkBust(dealer);
-    let evt = checkWin(player);
-    payOut(evt);
-    overlayMessage.textContent = message;
-    overlayCenter.style.zIndex = 2;
-  }, 1000);
+  if (dealer.score < 17) {
+    dealerHit();
+  } else {
+    endHand();
+  }
 }
 
 function dealHoleCard() {
@@ -327,9 +370,27 @@ function dealHoleCard() {
   renderTable();
 }
 
+function dealerHit() {
+  setTimeout(function () {
+    addCard(dealer, "faceUp");
+    renderTable();
+    if (dealer.score < 17) {
+      dealerHit();
+    } else {
+      endHand();
+    }
+  }, 1000);
+}
+
 // WIN CONDITION FUNCTIONS
 function checkWin(person) {
-  if (dealer.bust) {
+  if (person.hasBlackJack) {
+    if (dealer.hasBlackJack) {
+      return "Draw";
+    } else {
+      return "Blackjack";
+    }
+  } else if (dealer.bust) {
     if (person.bust) {
       return "Draw";
     } else {
@@ -343,6 +404,8 @@ function checkWin(person) {
         return "Win";
       } else if (person.score < dealer.score) {
         return "Lose";
+      } else if (dealer.hasBlackJack) {
+        return "Lose";
       } else {
         return "Draw";
       }
@@ -350,18 +413,38 @@ function checkWin(person) {
   }
 }
 
-function payOut(evt) {
-  parseInts();
-  if (evt === "Win") {
-    bankValue += betValue;
-    message = message + "You Win :) ";
-  } else if (evt === "Lose") {
-    bankValue -= betValue;
-    message = message + "You lose :( ";
-  } else {
-    message = message + "Push ";
+function endHand() {
+  let evts = [];
+  evts[0] = checkWin(player);
+  if (standCount === 2) {
+    evts[1] = checkWin(split);
   }
-  bankText.textContent = `$ ${bankValue}`;
+  payOut(evts);
+  overlayMessage.textContent = message;
+  overlayCenter.style.zIndex = 2;
+}
+
+function payOut(evts) {
+  parseInts();
+  evts.forEach(function (evt, idx) {
+    if (idx === 1) {
+      message = message + " & ";
+      overlaySplit.style.zIndex = -1;
+    }
+    if (evt === "Blackjack") {
+      bankValue += betValue * 1.5;
+      message = message + "Blackjack ";
+    } else if (evt === "Win") {
+      bankValue += betValue;
+      message = message + "You Win ";
+    } else if (evt === "Lose") {
+      bankValue -= betValue;
+      message = message + "You lose ";
+    } else {
+      message = message + "Push ";
+    }
+    bankText.textContent = `$ ${bankValue}`;
+  });
 }
 
 function cashOut() {
@@ -377,35 +460,63 @@ function cashOut() {
   }
 }
 
+function checkConditions() {
+  if (bankValue === 0) {
+    overlayBankrupt.style.zIndex = 3;
+  } else if (playingDeck.length < (basicDeck.length * deckCount) / 2) {
+    shuffleDeck();
+  } else {
+    resetHand();
+  }
+}
+
 // SPLIT FUNCTIONS
 function checkSplit() {
-  if (player.hand[0].substring(1) === player.hand[1].substring(1)) {
-    let splitBtn = document.createElement("button");
+  if (
+    player.hand[0].substring(1) === player.hand[1].substring(1) &&
+    player.hand.length === 2
+  ) {
+    splitBtn = document.createElement("button");
     splitBtn.classList.add("button", "split");
     splitBtn.style.marginLeft = "75px";
     splitBtn.textContent = "Split";
     splitBtn.addEventListener("click", splitCards);
     centerTable.appendChild(splitBtn);
+    removeSplitBtn = true;
+  }
+}
+
+function removeSplit(remove) {
+  if (remove) {
+    splitBtn.removeEventListener("click", splitCards);
+    centerTable.removeChild(centerTable.lastChild);
+    splitBtn.remove();
+    removeSplitBtn = false;
   }
 }
 
 function splitCards() {
   split.hand[0] = player.hand[1];
   player.hand.pop();
-  player.hand.push(rndCard(player));
-  split.hand.push(rndCard(player));
+  split.hasAce[0] = player.hasAce[1];
+  player.hasAce.pop();
+  split.aceType[0] = player.aceType[1];
+  player.aceType.pop();
+  addCard(player, "faceUp");
+  addCard(split, "faceUp");
   updateScore(player);
   updateScore(split);
-  centerTable.removeChild(centerTable.lastChild);
   unlockSplit();
-  renderSplit();
+  renderTable();
 }
 
 function renderSplit() {
-  removeCards(pHandEl);
-  removeCards(dHandEl);
-  renderHand(dealer, dHandEl, dScoreEl);
-  renderHand(player, pHandEl, pScoreEl, "large");
+  if (player.hand.length + split.hand.length > 5) {
+    size = "xsmall";
+  } else {
+    size = "small";
+  }
+  renderHand(player, pHandEl, pScoreEl, size);
 
   let spacer = document.createElement("div");
   spacer.style.width = "50px";
@@ -416,7 +527,7 @@ function renderSplit() {
   sScoreEl.style.marginRight = "";
   sScoreEl.style.marginLeft = "25px";
 
-  renderHand(split, pHandEl, sScoreEl, "large");
+  renderHand(split, pHandEl, sScoreEl, size);
   pHandEl.appendChild(sScoreEl);
   overlaySplit.style.zIndex = 1;
 }
@@ -439,14 +550,11 @@ function unlockSplit() {
   splitStand2Btn.addEventListener("click", function () {
     standOrBustSplit(split);
   });
-  standCount = 0;
 }
 
 function hitSplit(person) {
   addCard(person, "faceUp");
-  updateScore(person);
-  renderSplit();
-  person.bust = checkBust(person);
+  renderTable();
   person.bust ? standOrBustSplit(person) : "";
 }
 
@@ -457,7 +565,7 @@ function standOrBustSplit(person) {
 }
 
 function standCheck() {
-  standCount === 2 ? dealerPlaySplit() : "";
+  standCount === 2 ? dealerPlay() : "";
 }
 
 function lockSplit(person) {
@@ -480,31 +588,4 @@ function lockSplit(person) {
       standOrBustSplit(split);
     });
   }
-}
-
-// SPLIT DEALER FUNCTIONS
-function dealerPlaySplit() {
-  dealHoleCardSplit();
-  setTimeout(function () {
-    while (dealer.score < 17) {
-      addCard(dealer, "faceUp");
-      updateScore(dealer);
-      renderSplit();
-    }
-    dealer.bust = checkBust(dealer);
-    let evt1 = checkWin(player);
-    let evt2 = checkWin(split);
-    payOut(evt1);
-    payOut(evt2);
-    overlaySplit.style.zIndex = -1;
-    overlayMessage.textContent = message;
-    overlayCenter.style.zIndex = 2;
-  }, 1000);
-}
-
-function dealHoleCardSplit() {
-  dealer.hand.pop();
-  addCard(dealer, "faceUp");
-  updateScore(dealer);
-  renderSplit();
 }

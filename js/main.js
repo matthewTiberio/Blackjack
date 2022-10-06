@@ -8,7 +8,7 @@ let message = "";
 let removeSplitBtn = false;
 let size = "";
 let splitBtn;
-let deckCount = 4;
+let deckCount = 3;
 
 const player = {
   hand: [],

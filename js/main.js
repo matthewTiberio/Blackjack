@@ -1,3 +1,6 @@
+// Look into rendering individual hands instead of the entire board
+// Make sure double downs and splits don't allow you to bet more than you have
+
 // Constants
 let bankStart = 1000;
 let betDefault = 200;
@@ -8,7 +11,7 @@ let message = "";
 let removeSplitBtn = false;
 let size = "";
 let splitBtn;
-let deckCount = 3;
+let deckCount = 4;
 
 const player = {
   hand: [],
@@ -60,7 +63,8 @@ const dealBtn = document.querySelector(".placeBet");
 const hitBtn = document.getElementById("hit");
 const standBtn = document.getElementById("stand");
 const doubleDownBtn = document.querySelector(".doubleDown");
-const playAgainBtn = document.querySelector(".playAgain");
+const newBetBtn = document.querySelector(".newBet");
+const sameBetBtn = document.querySelector(".sameBet");
 const cashOutBtn = document.querySelector(".cashOut");
 
 // Split elements
@@ -93,7 +97,8 @@ dealBtn.addEventListener("click", dealHand);
 betText.addEventListener("blur", checkBetVal);
 
 // Win Condition Event Listeners
-playAgainBtn.addEventListener("click", checkConditions);
+newBetBtn.addEventListener("click", newBet);
+sameBetBtn.addEventListener("click", sameBet);
 cashOutBtn.addEventListener("click", cashOut);
 
 // CODE START
@@ -105,6 +110,7 @@ function init() {
   betText.value = `$ ${betDefault}`;
   createDeck();
   resetHand();
+  goToBetting();
 }
 
 function createDeck() {
@@ -115,32 +121,36 @@ function createDeck() {
   }
 }
 
-function resetHand() {
+function goToBetting() {
   overlayMain.style.zIndex = 1;
   overlayAside.style.zIndex = -1;
+  resetBet();
+  addCard(player, "back");
+  addCard(player, "back");
+  addCard(dealer, "back");
+  addCard(dealer, "back");
+  renderTable();
+}
+
+function resetHand() {
   overlayCenter.style.zIndex = -1;
   overlaySplit.style.zIndex = -1;
   message = "";
   standCount = 0;
   resetPerson(player);
-  resetPerson(split);
   resetPerson(dealer);
-  addCard(player, "faceDown");
-  addCard(player, "faceDown");
-  addCard(dealer, "faceDown");
-  addCard(dealer, "faceDown");
+  resetPerson(split);
   unLockPlayer();
-  renderTable();
 }
 
-function shuffleDeck() {
+function shuffleDeck(callback) {
   overlayShuffle.style.zIndex = 2;
   overlayShuffle.textContent = "Reshuffle";
   setTimeout(function () {
     overlayShuffle.style.zIndex = -1;
     playingDeck = [];
     createDeck();
-    resetHand();
+    callback;
   }, 1500);
 }
 
@@ -183,26 +193,26 @@ function unLockPlayer() {
 }
 
 function renderTable() {
-  removeCards(dHandEl);
-  removeCards(pHandEl);
-  updateScore(player);
-  updateScore(dealer);
-  removeSplit(removeSplitBtn);
-  if (split.hand[0]) {
-    updateScore(split);
-    renderSplit();
-  } else if (player.hand.length > 4) {
-    renderHand(player, pHandEl, pScoreEl, "small");
-  } else {
-    renderHand(player, pHandEl, pScoreEl);
-  }
-  if (dealer.hand.length > 4) {
-    renderHand(dealer, dHandEl, dScoreEl, "small");
-  } else {
-    renderHand(dealer, dHandEl, dScoreEl);
-  }
+  renderHand(player, pHandEl, pScoreEl);
+  renderHand(dealer, dHandEl, dScoreEl);
   if (player.hand[0] !== "back" && dealer.hand[1] === "back") {
     checkSplit();
+  }
+}
+
+function renderHand(person, hand, score) {
+  removeCards(hand);
+  updateScore(person);
+  removeSplit(removeSplitBtn);
+  if (split.hand[0] && person === player) {
+    renderSplit();
+    return;
+  }
+
+  if (person.hand.length > 4) {
+    renderCards(person, hand, score, "small");
+  } else {
+    renderCards(person, hand, score);
   }
 }
 
@@ -236,7 +246,7 @@ function updateScore(person) {
   person.bust = checkBust(person);
 }
 
-function renderHand(person, hand, score, size) {
+function renderCards(person, hand, score, size) {
   person.hand.forEach(function (card, idx) {
     let newCard = document.createElement("div");
     newCard.classList.add("card", size, card);
@@ -244,32 +254,39 @@ function renderHand(person, hand, score, size) {
   });
   if (person.hasBlackJack) {
     score.textContent = person.score;
+    score.style.width = "70px";
   } else if (person.aceType.includes("soft")) {
     score.textContent = `${person.score}/${person.score - 10}`;
+    score.style.width = "110px";
   } else {
     score.textContent = person.score;
+    score.style.width = "70px";
   }
 }
 
 // BETTING FUNCTIONS
 function increaseBet() {
   parseInts();
-  if (betValue < bankValue) {
+  if (betValue < bankValue - minBet) {
     betValue += minBet;
-    betText.value = `$ ${betValue}`;
+  } else {
+    betValue = bankValue;
   }
+  betText.value = `$ ${betValue}`;
 }
 
 function decreaseBet() {
   parseInts();
   if (betValue > minBet) {
     betValue -= minBet;
-    betText.value = `$ ${betValue}`;
+  } else if (betValue > bankValue) {
+    betValue = bankValue;
   }
+  betText.value = `$ ${betValue}`;
 }
 
 function resetBet() {
-  betText.value = betDefault;
+  betText.value = `$ ${betDefault}`;
 }
 
 function parseInts() {
@@ -295,8 +312,9 @@ function checkBetVal() {
 function dealHand() {
   overlayMain.style.zIndex = -1;
   overlayAside.style.zIndex = 1;
-  player.hand = [];
-  dealer.hand = [];
+  resetPerson(player);
+  resetPerson(dealer);
+  resetPerson(split);
   addCard(player, "faceUp");
   addCard(player, "faceUp");
   addCard(dealer, "faceUp");
@@ -306,7 +324,7 @@ function dealHand() {
 
 function hitMe() {
   addCard(player, "faceUp");
-  renderTable();
+  renderHand(player, pHandEl, pScoreEl);
   player.bust ? standOrBust() : "";
   doubleDownBtn.style.opacity = 0.5;
   doubleDownBtn.removeEventListener("click", doubleDown);
@@ -367,13 +385,13 @@ function dealerPlay() {
 function dealHoleCard() {
   dealer.hand.pop();
   addCard(dealer, "faceUp");
-  renderTable();
+  renderHand(dealer, dHandEl, dScoreEl);
 }
 
 function dealerHit() {
   setTimeout(function () {
     addCard(dealer, "faceUp");
-    renderTable();
+    renderHand(dealer, dHandEl, dScoreEl);
     if (dealer.score < 17) {
       dealerHit();
     } else {
@@ -390,25 +408,19 @@ function checkWin(person) {
     } else {
       return "Blackjack";
     }
+  } else if (person.bust) {
+    return "Lose";
   } else if (dealer.bust) {
-    if (person.bust) {
-      return "Draw";
-    } else {
-      return "Win";
-    }
+    return "Win";
   } else {
-    if (person.bust) {
+    if (person.score > dealer.score) {
+      return "Win";
+    } else if (person.score < dealer.score) {
+      return "Lose";
+    } else if (dealer.hasBlackJack) {
       return "Lose";
     } else {
-      if (person.score > dealer.score) {
-        return "Win";
-      } else if (person.score < dealer.score) {
-        return "Lose";
-      } else if (dealer.hasBlackJack) {
-        return "Lose";
-      } else {
-        return "Draw";
-      }
+      return "Draw";
     }
   }
 }
@@ -420,8 +432,12 @@ function endHand() {
     evts[1] = checkWin(split);
   }
   payOut(evts);
-  overlayMessage.textContent = message;
-  overlayCenter.style.zIndex = 2;
+  if (bankValue === 0) {
+    overlayBankrupt.style.zIndex = 3;
+  } else {
+    overlayMessage.textContent = message;
+    overlayCenter.style.zIndex = 2;
+  }
 }
 
 function payOut(evts) {
@@ -460,21 +476,38 @@ function cashOut() {
   }
 }
 
-function checkConditions() {
-  if (bankValue === 0) {
-    overlayBankrupt.style.zIndex = 3;
-  } else if (playingDeck.length < (basicDeck.length * deckCount) / 2) {
-    shuffleDeck();
+function newBet() {
+  if (playingDeck.length < (basicDeck.length * deckCount) / 2) {
+    resetHand();
+    shuffleDeck(goToBetting());
   } else {
     resetHand();
+    goToBetting();
+  }
+}
+
+function sameBet() {
+  parseInts();
+  if (betValue > bankValue) {
+    betValue = bankValue;
+    betText.value = `$ ${betValue}`;
+  }
+  if (playingDeck.length < (basicDeck.length * deckCount) / 2) {
+    resetHand();
+    shuffleDeck(dealHand());
+  } else {
+    resetHand();
+    dealHand();
   }
 }
 
 // SPLIT FUNCTIONS
 function checkSplit() {
+  parseInts();
   if (
     player.hand[0].substring(1) === player.hand[1].substring(1) &&
-    player.hand.length === 2
+    player.hand.length === 2 &&
+    betValue * 2 < bankValue
   ) {
     splitBtn = document.createElement("button");
     splitBtn.classList.add("button", "split");
@@ -507,16 +540,19 @@ function splitCards() {
   updateScore(player);
   updateScore(split);
   unlockSplit();
-  renderTable();
+  renderSplit();
 }
 
 function renderSplit() {
+  updateScore(player);
+  updateScore(split);
+  removeCards(pHandEl);
   if (player.hand.length + split.hand.length > 5) {
     size = "xsmall";
   } else {
     size = "small";
   }
-  renderHand(player, pHandEl, pScoreEl, size);
+  renderCards(player, pHandEl, pScoreEl, size);
 
   let spacer = document.createElement("div");
   spacer.style.width = "50px";
@@ -527,7 +563,7 @@ function renderSplit() {
   sScoreEl.style.marginRight = "";
   sScoreEl.style.marginLeft = "25px";
 
-  renderHand(split, pHandEl, sScoreEl, size);
+  renderCards(split, pHandEl, sScoreEl, size);
   pHandEl.appendChild(sScoreEl);
   overlaySplit.style.zIndex = 1;
 }
@@ -535,31 +571,35 @@ function renderSplit() {
 // SPLIT PLAYING FUNCTIONS
 function unlockSplit() {
   splitHit1Btn.style.opacity = 1;
-  splitHit1Btn.addEventListener("click", function () {
-    hitSplit(player);
-  });
-  splitStand1Btn.opacity = 1;
-  splitStand1Btn.addEventListener("click", function () {
-    standOrBustSplit(player);
-  });
+  splitHit1Btn.addEventListener("click", hitSplit1);
+  splitStand1Btn.style.opacity = 1;
+  splitStand1Btn.addEventListener("click", standOrBustSplit1);
   splitHit2Btn.style.opacity = 1;
-  splitHit2Btn.addEventListener("click", function () {
-    hitSplit(split);
-  });
+  splitHit2Btn.addEventListener("click", hitSplit2);
   splitStand2Btn.style.opacity = 1;
-  splitStand2Btn.addEventListener("click", function () {
-    standOrBustSplit(split);
-  });
+  splitStand2Btn.addEventListener("click", standOrBustSplit2);
 }
 
-function hitSplit(person) {
-  addCard(person, "faceUp");
-  renderTable();
-  person.bust ? standOrBustSplit(person) : "";
+function hitSplit1() {
+  addCard(player, "faceUp");
+  renderSplit();
+  person.bust ? standOrBustSplit(player) : "";
 }
 
-function standOrBustSplit(person) {
-  lockSplit(person);
+function standOrBustSplit1() {
+  lockSplit(player);
+  standCount = standCount + 1;
+  standCheck();
+}
+
+function hitSplit2() {
+  addCard(split, "faceUp");
+  renderSplit();
+  person.bust ? standOrBustSplit(split) : "";
+}
+
+function standOrBustSplit2() {
+  lockSplit(split);
   standCount = standCount + 1;
   standCheck();
 }
@@ -571,21 +611,13 @@ function standCheck() {
 function lockSplit(person) {
   if (person === player) {
     splitHit1Btn.style.opacity = 0.5;
-    splitHit1Btn.removeEventListener("click", function () {
-      hitSplit(player);
-    });
+    splitHit1Btn.removeEventListener("click", hitSplit1);
     splitStand1Btn.style.opacity = 0.5;
-    splitStand1Btn.removeEventListener("click", function () {
-      standOrBustSplit(player);
-    });
+    splitStand1Btn.removeEventListener("click", standOrBustSplit1);
   } else {
     splitHit2Btn.style.opacity = 0.5;
-    splitHit2Btn.removeEventListener("click", function () {
-      hitSplit(split);
-    });
+    splitHit2Btn.removeEventListener("click", hitSplit2);
     splitStand2Btn.style.opacity = 0.5;
-    splitStand2Btn.removeEventListener("click", function () {
-      standOrBustSplit(split);
-    });
+    splitStand2Btn.removeEventListener("click", standOrBustSplit2);
   }
 }

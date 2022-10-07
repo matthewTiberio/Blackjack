@@ -107,13 +107,13 @@ aside .defaultBet {
   font-size: 48px;
 }
 div.score {
-  height: 90px;
-  width: 90px;
+  height: 70px;
+  width: 70px;
   border: 2px dashed black;
   margin-right: 50px;
-  font-size: 36px;
+  font-size: 32px;
   text-align: center;
-  line-height: 90px;
+  line-height: 70px;
   font-weight: bold;
   opacity: 50%;
 }
@@ -130,8 +130,7 @@ body > div {
   background-color: black;
   opacity: 25%;
 }
-.overlayMain,
-.overlayBankrupt {
+.overlayMain {
   height: 100vh;
   width: calc(100vw - 250px);
   left: 250px;
@@ -142,7 +141,8 @@ body > div {
 }
 .overlayCenter,
 .overlaySplit,
-.overlayShuffle {
+.overlayShuffle,
+.overlayBankrupt {
   height: 33vh;
   width: calc(100vw - 250px);
   left: 250px;
@@ -161,11 +161,12 @@ div.overlayMessage {
 }
 .button.next {
   display: inline;
-  height: 75px;
-  width: 200px;
-  margin: 15px;
+  height: 80px;
+  width: 165px;
+  margin: 5px 15px;
   font-size: 32px;
   z-index: -1;
+  vertical-align: top;
 }
 .overlaySplit {
   display: flex;
@@ -189,9 +190,10 @@ h1 {
   font-size: 86px;
   font-weight: bolder;
   color: red;
-  margin-top: 33vh;
+  margin: 25px auto;
 }
 h2 {
   color: black;
   font-size: 64px;
+  margin: 25px auto;
 }

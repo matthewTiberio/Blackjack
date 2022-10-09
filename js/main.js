@@ -1,7 +1,3 @@
-// Look into rendering individual hands instead of the entire board
-// Make sure double downs and splits don't allow you to bet more than you have
-
-// Constants
 let bankStart = 1000;
 let betDefault = 200;
 let minBet = 50;
@@ -40,26 +36,69 @@ const dealer = {
   hasBlackJack: false,
 };
 
-// prettier-ignore
 const basicDeck = [
-  "dA", "dK", "dQ", "dJ", "d10", "d09", "d08", "d07", "d06", "d05", "d04", "d03", "d02",
-  "hA", "hK", "hQ", "hJ", "h10", "h09", "h08", "h07", "h06", "h05", "h04", "h03", "h02",
-  "cA", "cK", "cQ", "cJ", "c10", "c09", "c08", "c07", "c06", "c05", "c04", "c03", "c02",
-  "sA", "sK", "sQ", "sJ", "s10", "s09", "s08", "s07", "s06", "s05", "s04", "s03", "s02",
+  "dA",
+  "dK",
+  "dQ",
+  "dJ",
+  "d10",
+  "d09",
+  "d08",
+  "d07",
+  "d06",
+  "d05",
+  "d04",
+  "d03",
+  "d02",
+  "hA",
+  "hK",
+  "hQ",
+  "hJ",
+  "h10",
+  "h09",
+  "h08",
+  "h07",
+  "h06",
+  "h05",
+  "h04",
+  "h03",
+  "h02",
+  "cA",
+  "cK",
+  "cQ",
+  "cJ",
+  "c10",
+  "c09",
+  "c08",
+  "c07",
+  "c06",
+  "c05",
+  "c04",
+  "c03",
+  "c02",
+  "sA",
+  "sK",
+  "sQ",
+  "sJ",
+  "s10",
+  "s09",
+  "s08",
+  "s07",
+  "s06",
+  "s05",
+  "s04",
+  "s03",
+  "s02",
 ];
 
-// Dom Elements
-// Money displays
 const bankText = document.querySelector(".bankValue");
 const betText = document.querySelector(".currentBet");
 
-// Betting buttons
 const betUp = document.querySelector(".increaseBet");
 const betDown = document.querySelector(".decreaseBet");
 const betReset = document.querySelector(".defaultBet");
 const dealBtn = document.querySelector(".placeBet");
 
-// Playing buttons
 const hitBtn = document.getElementById("hit");
 const standBtn = document.getElementById("stand");
 const doubleDownBtn = document.querySelector(".doubleDown");
@@ -67,14 +106,12 @@ const newBetBtn = document.querySelector(".newBet");
 const sameBetBtn = document.querySelector(".sameBet");
 const cashOutBtn = document.querySelector(".cashOut");
 
-// Split elements
 const overlaySplit = document.querySelector(".overlaySplit");
 const splitHit1Btn = document.getElementById("splitHit1");
 const splitStand1Btn = document.getElementById("splitStand1");
 const splitHit2Btn = document.getElementById("splitHit2");
 const splitStand2Btn = document.getElementById("splitStand2");
 
-// Reset elements
 const overlayMain = document.querySelector(".overlayMain");
 const overlayAside = document.querySelector(".overlayAside");
 const overlayCenter = document.querySelector(".overlayCenter");
@@ -82,29 +119,24 @@ const overlayMessage = document.querySelector(".overlayMessage");
 const overlayShuffle = document.querySelector(".overlayShuffle");
 const overlayBankrupt = document.querySelector(".overlayBankrupt");
 
-// Hand elements
 const pScoreEl = document.getElementById("playerScore");
 const dScoreEl = document.getElementById("dealerScore");
 const pHandEl = document.querySelector(".playerHand");
 const dHandEl = document.querySelector(".dealerHand");
 const centerTable = document.querySelector(".centerTable");
 
-// Betting Event Listeners
 betUp.addEventListener("click", increaseBet);
 betDown.addEventListener("click", decreaseBet);
 betReset.addEventListener("click", resetBet);
 dealBtn.addEventListener("click", dealHand);
 betText.addEventListener("blur", checkBetVal);
 
-// Win Condition Event Listeners
 newBetBtn.addEventListener("click", newBet);
 sameBetBtn.addEventListener("click", sameBet);
 cashOutBtn.addEventListener("click", cashOut);
 
-// CODE START
 init();
 
-// INITIAL FUNCTIONS
 function init() {
   bankText.textContent = `$ ${bankStart}`;
   betText.value = `$ ${betDefault}`;
@@ -264,7 +296,6 @@ function renderCards(person, hand, score, size) {
   }
 }
 
-// BETTING FUNCTIONS
 function increaseBet() {
   parseInts();
   if (betValue < bankValue - minBet) {
@@ -308,7 +339,6 @@ function checkBetVal() {
   betText.value = `$ ${betValue}`;
 }
 
-// PLAYING FUNCTIONS
 function dealHand() {
   overlayMain.style.zIndex = -1;
   overlayAside.style.zIndex = 1;
@@ -372,7 +402,6 @@ function lockPlayer() {
   standBtn.removeEventListener("click", standOrBust);
 }
 
-// DEALER FUNCTIONS
 function dealerPlay() {
   dealHoleCard();
   if (dealer.score < 17) {
@@ -400,7 +429,6 @@ function dealerHit() {
   }, 1000);
 }
 
-// WIN CONDITION FUNCTIONS
 function checkWin(person) {
   if (person.hasBlackJack) {
     if (dealer.hasBlackJack) {
@@ -501,7 +529,6 @@ function sameBet() {
   }
 }
 
-// SPLIT FUNCTIONS
 function checkSplit() {
   parseInts();
   if (
@@ -568,7 +595,6 @@ function renderSplit() {
   overlaySplit.style.zIndex = 1;
 }
 
-// SPLIT PLAYING FUNCTIONS
 function unlockSplit() {
   splitHit1Btn.style.opacity = 1;
   splitHit1Btn.addEventListener("click", hitSplit1);

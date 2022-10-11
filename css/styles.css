@@ -140,7 +140,6 @@ body > div {
   width: 250px;
 }
 .overlayCenter,
-.overlaySplit,
 .overlayShuffle,
 .overlayBankrupt {
   height: 33vh;
@@ -167,11 +166,6 @@ div.overlayMessage {
   font-size: 32px;
   z-index: -1;
   vertical-align: top;
-}
-.overlaySplit {
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 .overlayShuffle {
   font-size: 86px;

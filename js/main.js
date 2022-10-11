@@ -2,12 +2,12 @@ let bankStart = 1000;
 let betDefault = 200;
 let minBet = 50;
 let playingDeck = [];
-let standCount = 0;
 let message = "";
 let removeSplitBtn = false;
-let size = "";
+let splitSize = [];
 let splitBtn;
 let deckCount = 4;
+let activeHand;
 
 const player = {
   hand: [],
@@ -166,9 +166,7 @@ function goToBetting() {
 
 function resetHand() {
   overlayCenter.style.zIndex = -1;
-  overlaySplit.style.zIndex = -1;
   message = "";
-  standCount = 0;
   resetPerson(player);
   resetPerson(dealer);
   resetPerson(split);
@@ -340,6 +338,7 @@ function checkBetVal() {
 }
 
 function dealHand() {
+  activeHand = player;
   overlayMain.style.zIndex = -1;
   overlayAside.style.zIndex = 1;
   resetPerson(player);
@@ -456,7 +455,7 @@ function checkWin(person) {
 function endHand() {
   let evts = [];
   evts[0] = checkWin(player);
-  if (standCount === 2) {
+  if (activeHand === split) {
     evts[1] = checkWin(split);
   }
   payOut(evts);
@@ -473,7 +472,6 @@ function payOut(evts) {
   evts.forEach(function (evt, idx) {
     if (idx === 1) {
       message = message + " & ";
-      overlaySplit.style.zIndex = -1;
     }
     if (evt === "Blackjack") {
       bankValue += betValue * 1.5;
@@ -529,6 +527,8 @@ function sameBet() {
   }
 }
 
+// SPLIT FUNCTIONS
+
 function checkSplit() {
   parseInts();
   if (
@@ -574,12 +574,14 @@ function renderSplit() {
   updateScore(player);
   updateScore(split);
   removeCards(pHandEl);
-  if (player.hand.length + split.hand.length > 5) {
-    size = "xsmall";
+  if (activeHand === player) {
+    splitSize[0] = "small";
+    splitSize[1] = "xsmall";
   } else {
-    size = "small";
+    splitSize[0] = "xsmall";
+    splitSize[1] = "small";
   }
-  renderCards(player, pHandEl, pScoreEl, size);
+  renderCards(player, pHandEl, pScoreEl, splitSize[0]);
 
   let spacer = document.createElement("div");
   spacer.style.width = "50px";
@@ -590,65 +592,44 @@ function renderSplit() {
   sScoreEl.style.marginRight = "";
   sScoreEl.style.marginLeft = "25px";
 
-  renderCards(split, pHandEl, sScoreEl, size);
+  renderCards(split, pHandEl, sScoreEl, splitSize[1]);
   pHandEl.appendChild(sScoreEl);
-  overlaySplit.style.zIndex = 1;
+  removeSplit(removeSplitBtn);
 }
 
 function unlockSplit() {
-  splitHit1Btn.style.opacity = 1;
-  splitHit1Btn.addEventListener("click", hitSplit1);
-  splitStand1Btn.style.opacity = 1;
-  splitStand1Btn.addEventListener("click", standOrBustSplit1);
-  splitHit2Btn.style.opacity = 1;
-  splitHit2Btn.addEventListener("click", hitSplit2);
-  splitStand2Btn.style.opacity = 1;
-  splitStand2Btn.addEventListener("click", standOrBustSplit2);
+  doubleDownBtn.style.opacity = 0.5;
+  doubleDownBtn.removeEventListener("click", doubleDown);
+  hitBtn.removeEventListener("click", hitMe);
+  standBtn.removeEventListener("click", standOrBust);
+  hitBtn.addEventListener("click", hitSplit);
+  standBtn.addEventListener("click", standOrBustSplit);
 }
 
-function hitSplit1() {
-  addCard(player, "faceUp");
+function hitSplit() {
+  addCard(activeHand, "faceUp");
   renderSplit();
-  player.bust ? standOrBustSplit1(player) : "";
+  activeHand.bust ? standOrBustSplit(activeHand) : "";
 }
 
-function standOrBustSplit1() {
-  lockSplit(player);
-  standCount = standCount + 1;
-  standCheck();
-}
-
-function hitSplit2() {
-  addCard(split, "faceUp");
-  renderSplit();
-  split.bust ? standOrBustSplit2(split) : "";
-}
-
-function standOrBustSplit2() {
-  lockSplit(split);
-  standCount = standCount + 1;
-  standCheck();
-}
-
-function standCheck() {
-  standCount === 2 ? dealerPlay() : "";
-}
-
-function lockSplit(person) {
-  if (person === player) {
-    splitHit1Btn.style.opacity = 0.5;
-    splitHit1Btn.removeEventListener("click", hitSplit1);
-    splitStand1Btn.style.opacity = 0.5;
-    splitStand1Btn.removeEventListener("click", standOrBustSplit1);
+function standOrBustSplit() {
+  if (activeHand === player) {
+    activeHand = split;
+    renderSplit();
   } else {
-    splitHit2Btn.style.opacity = 0.5;
-    splitHit2Btn.removeEventListener("click", hitSplit2);
-    splitStand2Btn.style.opacity = 0.5;
-    splitStand2Btn.removeEventListener("click", standOrBustSplit2);
+    lockSplit();
+    dealerPlay();
   }
+}
+
+function lockSplit() {
+  hitBtn.style.opacity = 0.5;
+  hitBtn.removeEventListener("click", hitSplit);
+  standBtn.style.opacity = 0.5;
+  standBtn.removeEventListener("click", standOrBustSplit);
 }
 
 // Make the split go one hand at a time
 // Increase size of active hand, decrease size of inactive
-// Hightlight box displaying score
+// Highlight box displaying score
 // Remove the need for a second set of buttons

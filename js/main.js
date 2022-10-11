@@ -647,3 +647,8 @@ function lockSplit(person) {
     splitStand2Btn.removeEventListener("click", standOrBustSplit2);
   }
 }
+
+// Make the split go one hand at a time
+// Increase size of active hand, decrease size of inactive
+// Hightlight box displaying score
+// Remove the need for a second set of buttons

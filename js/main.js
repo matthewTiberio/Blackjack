@@ -609,7 +609,7 @@ function unlockSplit() {
 function hitSplit1() {
   addCard(player, "faceUp");
   renderSplit();
-  person.bust ? standOrBustSplit(player) : "";
+  player.bust ? standOrBustSplit1(player) : "";
 }
 
 function standOrBustSplit1() {
@@ -621,7 +621,7 @@ function standOrBustSplit1() {
 function hitSplit2() {
   addCard(split, "faceUp");
   renderSplit();
-  person.bust ? standOrBustSplit(split) : "";
+  split.bust ? standOrBustSplit2(split) : "";
 }
 
 function standOrBustSplit2() {

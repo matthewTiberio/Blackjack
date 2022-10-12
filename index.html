@@ -12,6 +12,60 @@
   <body>
     <div class="overlayMain"></div>
     <div class="overlayAside"></div>
+    <div class="settings">
+      <a href="javascript:void(0)" class="closeBtn" onclick="closeSettings()"
+        >&times;</a
+      >
+      <fieldset>
+        <legend>Starting Bank</legend>
+        <input
+          type="number"
+          id="bank"
+          name="bank"
+          min="100"
+          max="10000"
+          step="100"
+          value="1000"
+        />
+      </fieldset>
+      <fieldset>
+        <legend>Default Bet</legend>
+        <input
+          type="number"
+          id="defaultBet"
+          name="defaultBet"
+          min="0"
+          max="500"
+          step="10"
+          value="100"
+        />
+      </fieldset>
+      <fieldset>
+        <legend>Minimum Bet</legend>
+        <input
+          type="number"
+          id="minBet"
+          name="minBet"
+          min="0"
+          max="500"
+          step="10"
+          value="50"
+        />
+      </fieldset>
+      <fieldset>
+        <legend>Include advice:</legend>
+        <div>
+          <input type="radio" id="yes" name="add_advice" value="yes" />
+          <label for="yes">Yes</label>
+        </div>
+        <div>
+          <input type="radio" id="no" name="add_advice" value="no" />
+          <label for="no">No</label>
+        </div>
+      </fieldset>
+      <button class="updateSettings">Update</button>
+    </div>
+    <button class="openSettings">&#9776;</button>
     <div class="overlayCenter">
       <div class="overlayMessage"></div>
       <button class="button next sameBet">Same Bet</button>

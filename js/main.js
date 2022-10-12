@@ -93,6 +93,8 @@ const basicDeck = [
 
 const bankText = document.querySelector(".bankValue");
 const betText = document.querySelector(".currentBet");
+const openPanel = document.querySelector(".openSettings");
+const setPanel = document.querySelector(".settings");
 
 const betUp = document.querySelector(".increaseBet");
 const betDown = document.querySelector(".decreaseBet");
@@ -134,8 +136,20 @@ betText.addEventListener("blur", checkBetVal);
 newBetBtn.addEventListener("click", newBet);
 sameBetBtn.addEventListener("click", sameBet);
 cashOutBtn.addEventListener("click", cashOut);
+openPanel.addEventListener("click", openSettings);
 
 init();
+
+function openSettings() {
+  setPanel.style.width = "250px";
+  setPanel.style.border = "solid black";
+  setPanel.style.borderWidth = "5px 5px 5px 0px";
+}
+
+function closeSettings() {
+  setPanel.style.width = "0px";
+  setPanel.style.borderWidth = "0px";
+}
 
 function init() {
   bankText.textContent = `$ ${bankStart}`;
@@ -340,7 +354,7 @@ function checkBetVal() {
 function dealHand() {
   activeHand = player;
   overlayMain.style.zIndex = -1;
-  overlayAside.style.zIndex = 1;
+  overlayAside.style.zIndex = 2;
   resetPerson(player);
   resetPerson(dealer);
   resetPerson(split);

@@ -20,7 +20,7 @@ Wins are paid out at even money, except for player blackjacks, which are paid ou
 
 ### Getting Started
 
-[Click Here](https://matthewtiberio.github.io/GA-Project1/) to play the game.
+[Click Here]([https://matthewtiberio.github.io/Blackjack/]) to play the game.
 
 #### Betting
 
